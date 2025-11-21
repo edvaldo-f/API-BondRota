@@ -1,53 +1,58 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import List
 from database import get_db
-from models import Motorista
-from schemas import Motorista as MotoristaSchema, MotoristaCreate, MotoristaUpdate
+import models, schemas
 
-router = APIRouter(prefix="/motoristas", tags=["motoristas"])
+router = APIRouter(
+    prefix="/motoristas",
+    tags=["Motoristas"]
+)
 
-@router.get("/", response_model=list[MotoristaSchema])
-def listar_motoristas(db: Session = Depends(get_db)):
-    """Listar todos os motoristas"""
-    return db.query(Motorista).all()
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.MotoristaResponse)
+def create_motorista(motorista: schemas.MotoristaCreate, db: Session = Depends(get_db)):
+    if db.query(models.Motorista).filter(models.Motorista.cpf == motorista.cpf).first():
+        raise HTTPException(status_code=400, detail="CPF já cadastrado")
 
-@router.get("/{motorista_id}", response_model=MotoristaSchema)
-def obter_motorista(motorista_id: int, db: Session = Depends(get_db)):
-    """Obter um motorista específico"""
-    motorista = db.query(Motorista).filter(Motorista.id_motorista == motorista_id).first()
+    new_motorista = models.Motorista(**motorista.dict())
+    db.add(new_motorista)
+    db.commit()
+    db.refresh(new_motorista)
+    return new_motorista
+
+@router.get("/", response_model=List[schemas.MotoristaResponse])
+def read_motoristas(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    motoristas = db.query(models.Motorista).offset(skip).limit(limit).all()
+    return motoristas
+
+@router.get("/{motorista_id}", response_model=schemas.MotoristaResponse)
+def read_motorista(motorista_id: int, db: Session = Depends(get_db)):
+    motorista = db.query(models.Motorista).filter(models.Motorista.id_motorista == motorista_id).first()
     if not motorista:
         raise HTTPException(status_code=404, detail="Motorista não encontrado")
     return motorista
 
-@router.post("/", response_model=MotoristaSchema)
-def criar_motorista(motorista: MotoristaCreate, db: Session = Depends(get_db)):
-    """Criar um novo motorista"""
-    db_motorista = Motorista(**motorista.dict())
-    db.add(db_motorista)
-    db.commit()
-    db.refresh(db_motorista)
-    return db_motorista
-
-@router.put("/{motorista_id}", response_model=MotoristaSchema)
-def atualizar_motorista(motorista_id: int, motorista: MotoristaUpdate, db: Session = Depends(get_db)):
-    """Atualizar um motorista"""
-    db_motorista = db.query(Motorista).filter(Motorista.id_motorista == motorista_id).first()
+@router.put("/{motorista_id}", response_model=schemas.MotoristaResponse)
+def update_motorista(motorista_id: int, motorista_update: schemas.MotoristaCreate, db: Session = Depends(get_db)):
+    db_motorista = db.query(models.Motorista).filter(models.Motorista.id_motorista == motorista_id).first()
     if not db_motorista:
         raise HTTPException(status_code=404, detail="Motorista não encontrado")
     
-    for key, value in motorista.dict(exclude_unset=True).items():
-        setattr(db_motorista, key, value)
+    db_motorista.nome = motorista_update.nome
+    db_motorista.cpf = motorista_update.cpf
+    db_motorista.telefone = motorista_update.telefone
+    db_motorista.data_de_nascimento = motorista_update.data_de_nascimento
     
     db.commit()
     db.refresh(db_motorista)
     return db_motorista
 
-@router.delete("/{motorista_id}")
-def deletar_motorista(motorista_id: int, db: Session = Depends(get_db)):
-    """Deletar um motorista"""
-    db_motorista = db.query(Motorista).filter(Motorista.id_motorista == motorista_id).first()
+@router.delete("/{motorista_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_motorista(motorista_id: int, db: Session = Depends(get_db)):
+    db_motorista = db.query(models.Motorista).filter(models.Motorista.id_motorista == motorista_id).first()
     if not db_motorista:
         raise HTTPException(status_code=404, detail="Motorista não encontrado")
+    
     db.delete(db_motorista)
     db.commit()
-    return {"message": "Motorista deletado com sucesso"}
+    return None

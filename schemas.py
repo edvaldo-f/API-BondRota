@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from datetime import date
 from typing import Optional, List
 
-#Schemas Motorista
+#Schemas ALuno
 class AlunoBase(BaseModel):
     nome: str
     instituicao_de_ensino: Optional[str] = None
@@ -24,7 +24,7 @@ class AlunoUpdate(BaseModel):
     turno: Optional[str] = None
     id_rota: Optional[int] = None
 
-class Aluno(AlunoBase):
+class AlunoResponse(AlunoBase):
     id_aluno: int
     class Config:
         from_attributes = True
@@ -42,7 +42,7 @@ class MotoristaUpdate(BaseModel):
     cpf: Optional[str] = None
     telefone: Optional[str] = None
     data_de_nascimento: Optional[date] = None
-class Motorista(MotoristaBase):
+class MotoristaResponse(MotoristaBase):
     id_motorista: int
     class Config:
         from_attributes = True
@@ -74,7 +74,7 @@ class OnibusUpdate(BaseModel):
     tomada: Optional[bool] = None
     id_motorista: Optional[int] = None
     id_rota: Optional[int] = None
-class Onibus(OnibusBase):
+class OnibusResponse(OnibusBase):
     id_onibus: int
     class Config:
         from_attributes = True
@@ -82,7 +82,7 @@ class Onibus(OnibusBase):
 #Schemas Rota
 class RotaBase(BaseModel):
     nome: str
-    pontos: Optional[str] = None
+    pontos: List[str] = None
     quantidade_total: Optional[int] = None
     quantidade_diaria: Optional[int] = None
 class RotaCreate(RotaBase):
@@ -92,7 +92,7 @@ class RotaUpdate(BaseModel):
     pontos: Optional[str] = None
     quantidade_total: Optional[int] = None
     quantidade_diaria: Optional[int] = None
-class Rota(RotaBase):
+class RotaResponse(RotaBase):
     id_rota: int
     class Config:
         from_attributes = True

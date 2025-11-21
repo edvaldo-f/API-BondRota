@@ -6,20 +6,15 @@ from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Adicionar SSL para conexões remotas (Render)
-if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
-    # Para PostgreSQL remoto, adicionar SSL
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args={"sslmode": "require"},
-        pool_pre_ping=True,  # Verifica a conexão antes de usar
-        pool_recycle=3600,   # Recicla conexões a cada 1 hora
-    )
-else:
-    # Para desenvolvimento local
-    engine = create_engine(DATABASE_URL)
+if not SQLALCHEMY_DATABASE_URL:
+    raise ValueError("A variável de ambiente DATABASE_URL não foi encontrada.")
+
+if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

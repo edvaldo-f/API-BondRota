@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, VARCHAR, Boolean, ForeignKey, CheckConstraint, Date, CHAR, Text
+from sqlalchemy import Column, Integer, String, VARCHAR, Boolean, ForeignKey, Date, CHAR
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -13,7 +14,9 @@ class Aluno(Base):
     data_de_nascimento = Column(Date)
     cpf = Column(CHAR(11), unique=True, nullable=False)
     turno = Column(VARCHAR(10), nullable=False)
-    id_rota = relationship("Rota", secondary="alunos_rotas", back_populates="alunos")
+    id_rota = Column(Integer, ForeignKey("rotas.id_rota"))
+    
+    rota = relationship("Rota", back_populates="alunos")
 
 class Motorista(Base):
     __tablename__ = "motoristas"
@@ -22,6 +25,8 @@ class Motorista(Base):
     cpf = Column(CHAR(11), unique=True, nullable=False)
     telefone = Column(String(11))
     data_de_nascimento = Column(Date)
+
+    onibus = relationship("Onibus", back_populates="motorista")
 
 class Onibus(Base):
     __tablename__ = "onibus"
@@ -35,9 +40,9 @@ class Onibus(Base):
     persiana = Column(Boolean, default=False)
     luz_de_leitura = Column(Boolean, default=False)
     tomada = Column(Boolean, default=False)
-    id_motorista = Column(Integer, ForeignKey("motoristas.id_motorista"),
-    nullable=True)
+    id_motorista = Column(Integer, ForeignKey("motoristas.id_motorista"), nullable=True)
     id_rota = Column(Integer, ForeignKey("rotas.id_rota"), nullable=True)
+    
     motorista = relationship("Motorista", back_populates="onibus")
     rota = relationship("Rota", back_populates="onibus")    
 
@@ -45,9 +50,9 @@ class Rota(Base):
     __tablename__ = "rotas"
     id_rota = Column(Integer, primary_key=True, index=True)
     nome = Column(VARCHAR(100))
-    pontos = Column(Text)
-    quantidade_total = Column(Integer)
-    quantidade_diaria = Column(Integer)
+    pontos = Column(ARRAY(String))
+    quantidade_total = Column(Integer, default=0)
+    quantidade_diaria = Column(Integer, default=0)
+    
     onibus = relationship("Onibus", back_populates="rota")
-    alunos = relationship("Motorista", secondary="alunos_rotas",
-    back_populates="rotas")
+    alunos = relationship("Aluno", back_populates="rota")
